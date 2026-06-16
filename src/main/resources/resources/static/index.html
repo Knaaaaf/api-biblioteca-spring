@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Biblioteca</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-5xl mx-auto space-y-8">
+        <h1 class="text-3xl font-bold text-gray-800 border-b pb-4">Sistema de Biblioteca</h1>
+
+        <!-- SEÇÃO AUTORES -->
+        <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
+            <h2 class="text-xl font-semibold text-indigo-600 border-b pb-2">Gerenciamento de Autores</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gray-50 p-4 rounded border h-fit">
+                    <label id="tituloSecaoAutor" class="block text-sm font-medium text-gray-700 mb-2">Cadastrar Novo Autor</label>
+                    <div class="space-y-3">
+                        <input id="nomeAutor" type="text" placeholder="Nome do Autor"
+                            class="border p-2 rounded w-full bg-white focus:outline-indigo-500">
+                        <div class="flex gap-2 pt-2">
+                            <button id="btnSalvarAutor" onclick="salvarAutor()"
+                                class="bg-indigo-600 text-white px-4 py-2 rounded w-full hover:bg-indigo-700 transition font-medium cursor-pointer">
+                                Salvar Autor
+                            </button>
+                            <button id="btnCancelarEdicaoAutor" onclick="cancelarEdicaoAutor()"
+                                class="hidden bg-gray-500 text-white px-4 py-2 rounded w-full hover:bg-gray-600 transition font-medium cursor-pointer">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-2 overflow-x-auto">
+                    <table class="min-w-full bg-white border rounded">
+                        <thead class="bg-gray-200 text-gray-700 text-left text-sm uppercase font-semibold">
+                            <tr>
+                                <th class="py-3 px-4 border-b">ID</th>
+                                <th class="py-3 px-4 border-b">Nome do Autor</th>
+                                <th class="py-3 px-4 border-b text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabelaAutores" class="text-gray-600 text-sm divide-y"></tbody>
+                    </table>
+                    <div id="avisoAutoresVazio" class="text-center text-gray-400 py-4 hidden">Nenhum autor cadastrado.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEÇÃO LIVROS -->
+        <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
+            <h2 id="tituloSecaoLivro" class="text-xl font-semibold text-emerald-600 border-b pb-2">Cadastrar Livro</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gray-50 p-4 rounded border h-fit">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                            <input id="tituloLivro" type="text" placeholder="Ex: Dom Casmurro"
+                                class="border p-2 rounded w-full bg-white focus:outline-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ano de Publicação</label>
+                            <input id="anoLivro" type="number" placeholder="Ex: 1899"
+                                class="border p-2 rounded w-full bg-white focus:outline-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ID do Autor</label>
+                            <input id="autorIdLivro" type="number" placeholder="Ex: 1"
+                                class="border p-2 rounded w-full bg-white focus:outline-emerald-500">
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button id="btnSalvarLivro" onclick="salvarLivro()"
+                                class="bg-emerald-600 text-white px-4 py-2 rounded w-full hover:bg-emerald-700 transition font-medium cursor-pointer">
+                                Salvar Livro
+                            </button>
+                            <button id="btnCancelarEdicaoLivro" onclick="cancelarEdicaoLivro()"
+                                class="hidden bg-gray-500 text-white px-4 py-2 rounded w-full hover:bg-gray-600 transition font-medium cursor-pointer">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-2 overflow-x-auto">
+                    <table class="min-w-full bg-white border rounded">
+                        <thead class="bg-gray-200 text-gray-700 text-left text-sm uppercase font-semibold">
+                            <tr>
+                                <th class="py-3 px-4 border-b">ID</th>
+                                <th class="py-3 px-4 border-b">Título</th>
+                                <th class="py-3 px-4 border-b">Ano</th>
+                                <th class="py-3 px-4 border-b">ID Autor</th>
+                                <th class="py-3 px-4 border-b text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabelaLivros" class="text-gray-600 text-sm divide-y"></tbody>
+                    </table>
+                    <div id="avisoLivrosVazio" class="text-center text-gray-400 py-4 hidden">Nenhum livro na biblioteca.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+
+        let autorEditandoId = null;
+        let autoresCarregados = [];
+
+        let livroEditandoId = null;
+        let livrosCarregados = [];
+
+        window.onload = () => {
+            carregarAutores();
+            carregarLivros();
+        };
+
+        // ==========================================
+        //   AUTORES
+        // ==========================================
+
+        async function carregarAutores() {
+            try {
+                const res = await fetch(`${API_URL}/autores`);
+                if (!res.ok) return;
+                const autores = await res.json();
+                const tabela = document.getElementById('corpoTabelaAutores');
+                const aviso = document.getElementById('avisoAutoresVazio');
+                tabela.innerHTML = '';
+                if (Array.isArray(autores) && autores.length > 0) {
+                    autoresCarregados = autores;
+                    aviso.classList.add('hidden');
+                    tabela.innerHTML = autores.map(a => `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="py-3 px-4 border-b font-semibold text-gray-800">${a.id}</td>
+                            <td class="py-3 px-4 border-b">${a.nome || 'Sem nome'}</td>
+                            <td class="py-3 px-4 border-b text-center space-x-2">
+                                <button onclick="prepararEdicaoAutor(${a.id})"
+                                    class="text-indigo-600 hover:text-indigo-800 font-medium hover:underline cursor-pointer">Editar</button>
+                                <button onclick="deletarAutor(${a.id})"
+                                    class="text-red-600 hover:text-red-800 font-medium hover:underline cursor-pointer">Excluir</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    autoresCarregados = [];
+                    aviso.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Erro ao carregar autores:", err);
+            }
+        }
+
+        async function salvarAutor() {
+            const nome = document.getElementById('nomeAutor').value.trim();
+            if (!nome) return alert('Por favor, informe o nome do autor.');
+            try {
+                let resposta;
+                if (autorEditandoId === null) {
+                    resposta = await fetch(`${API_URL}/autores`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome })
+                    });
+                } else {
+                    resposta = await fetch(`${API_URL}/autores/${autorEditandoId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome })
+                    });
+                }
+                if (!resposta.ok) {
+                    alert('Erro ao salvar o autor. Verifique o console Java.');
+                    return;
+                }
+                cancelarEdicaoAutor();
+                carregarAutores();
+            } catch (err) {
+                alert('Servidor desconectado. O Spring Boot está rodando?');
+            }
+        }
+
+        function prepararEdicaoAutor(id) {
+            const autor = autoresCarregados.find(a => a.id === id);
+            if (!autor) return;
+            autorEditandoId = id;
+            document.getElementById('nomeAutor').value = autor.nome || '';
+            const titulo = document.getElementById('tituloSecaoAutor');
+            titulo.innerText = `Atualizar Autor (ID ${id})`;
+            titulo.className = 'block text-sm font-medium text-indigo-600 mb-2';
+            const btnSalvar = document.getElementById('btnSalvarAutor');
+            btnSalvar.innerText = 'Atualizar Autor';
+            btnSalvar.className = 'bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 transition font-medium cursor-pointer';
+            document.getElementById('btnCancelarEdicaoAutor').classList.remove('hidden');
+        }
+
+        function cancelarEdicaoAutor() {
+            autorEditandoId = null;
+            document.getElementById('nomeAutor').value = '';
+            const titulo = document.getElementById('tituloSecaoAutor');
+            titulo.innerText = 'Cadastrar Novo Autor';
+            titulo.className = 'block text-sm font-medium text-gray-700 mb-2';
+            const btnSalvar = document.getElementById('btnSalvarAutor');
+            btnSalvar.innerText = 'Salvar Autor';
+            btnSalvar.className = 'bg-indigo-600 text-white px-4 py-2 rounded w-full hover:bg-indigo-700 transition font-medium cursor-pointer';
+            document.getElementById('btnCancelarEdicaoAutor').classList.add('hidden');
+        }
+
+        async function deletarAutor(id) {
+            if (!confirm('Tem certeza que deseja excluir este autor?\nAtenção: livros associados podem bloquear a exclusão.')) return;
+            try {
+                await fetch(`${API_URL}/autores/${id}`, { method: 'DELETE' });
+                carregarAutores();
+                carregarLivros();
+            } catch (err) {
+                console.error("Erro ao deletar autor:", err);
+            }
+        }
+
+        // ==========================================
+        //   LIVROS
+        // ==========================================
+
+        async function carregarLivros() {
+            try {
+                const res = await fetch(`${API_URL}/livros`);
+                if (!res.ok) return;
+                const livros = await res.json();
+                const tabela = document.getElementById('corpoTabelaLivros');
+                const aviso = document.getElementById('avisoLivrosVazio');
+                tabela.innerHTML = '';
+                if (Array.isArray(livros) && livros.length > 0) {
+                    livrosCarregados = livros;
+                    aviso.classList.add('hidden');
+                    tabela.innerHTML = livros.map(l => {
+                        const idAutor = l.autorId ?? (l.autor ? l.autor.id : 'N/A');
+                        return `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="py-3 px-4 border-b font-semibold text-gray-800">${l.id}</td>
+                                <td class="py-3 px-4 border-b">${l.titulo || 'Sem título'}</td>
+                                <td class="py-3 px-4 border-b">${l.anoPublicacao || 'N/A'}</td>
+                                <td class="py-3 px-4 border-b">${idAutor}</td>
+                                <td class="py-3 px-4 border-b text-center space-x-2">
+                                    <button onclick="prepararEdicaoLivro(${l.id})"
+                                        class="text-emerald-600 hover:text-emerald-800 font-medium hover:underline cursor-pointer">Editar</button>
+                                    <button onclick="deletarLivro(${l.id})"
+                                        class="text-red-600 hover:text-red-800 font-medium hover:underline cursor-pointer">Excluir</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    livrosCarregados = [];
+                    aviso.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Erro ao carregar livros:", err);
+            }
+        }
+
+        async function salvarLivro() {
+            const titulo = document.getElementById('tituloLivro').value.trim();
+            const ano = document.getElementById('anoLivro').value.trim();
+            const autorId = document.getElementById('autorIdLivro').value.trim();
+            if (!titulo) return alert('Por favor, informe o título do livro.');
+            if (!ano) return alert('Por favor, informe o ano de publicação.');
+            if (!autorId) return alert('Por favor, informe o ID do autor.');
+            const payload = { titulo, anoPublicacao: parseInt(ano), autorId: parseInt(autorId) };
+            try {
+                let resposta;
+                if (livroEditandoId === null) {
+                    resposta = await fetch(`${API_URL}/livros`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    resposta = await fetch(`${API_URL}/livros/${livroEditandoId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                if (!resposta.ok) {
+                    alert('Erro ao salvar o livro. Verifique se o ID do autor existe.');
+                    return;
+                }
+                cancelarEdicaoLivro();
+                carregarLivros();
+            } catch (err) {
+                alert('Servidor desconectado. O Spring Boot está rodando?');
+            }
+        }
+
+        function prepararEdicaoLivro(id) {
+            const livro = livrosCarregados.find(l => l.id === id);
+            if (!livro) return;
+            livroEditandoId = id;
+            document.getElementById('tituloLivro').value = livro.titulo || '';
+            document.getElementById('anoLivro').value = livro.anoPublicacao || '';
+            document.getElementById('autorIdLivro').value = livro.autorId ?? (livro.autor ? livro.autor.id : '');
+            const tituloSecao = document.getElementById('tituloSecaoLivro');
+            tituloSecao.innerText = `Atualizar Livro (ID ${id})`;
+            tituloSecao.className = 'text-xl font-semibold text-blue-600 border-b pb-2';
+            const btnSalvar = document.getElementById('btnSalvarLivro');
+            btnSalvar.innerText = 'Atualizar Livro';
+            btnSalvar.className = 'bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 transition font-medium cursor-pointer';
+            document.getElementById('btnCancelarEdicaoLivro').classList.remove('hidden');
+        }
+
+        function cancelarEdicaoLivro() {
+            livroEditandoId = null;
+            document.getElementById('tituloLivro').value = '';
+            document.getElementById('anoLivro').value = '';
+            document.getElementById('autorIdLivro').value = '';
+            const tituloSecao = document.getElementById('tituloSecaoLivro');
+            tituloSecao.innerText = 'Cadastrar Livro';
+            tituloSecao.className = 'text-xl font-semibold text-emerald-600 border-b pb-2';
+            const btnSalvar = document.getElementById('btnSalvarLivro');
+            btnSalvar.innerText = 'Salvar Livro';
+            btnSalvar.className = 'bg-emerald-600 text-white px-4 py-2 rounded w-full hover:bg-emerald-700 transition font-medium cursor-pointer';
+            document.getElementById('btnCancelarEdicaoLivro').classList.add('hidden');
+        }
+
+        async function deletarLivro(id) {
+            if (!confirm('Tem certeza que deseja excluir este livro?')) return;
+            try {
+                await fetch(`${API_URL}/livros/${id}`, { method: 'DELETE' });
+                carregarLivros();
+            } catch (err) {
+                console.error("Erro ao deletar livro:", err);
+            }
+        }
+    </script>
+</body>
+</html>
