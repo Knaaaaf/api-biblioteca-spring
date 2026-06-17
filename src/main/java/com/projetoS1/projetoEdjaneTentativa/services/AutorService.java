@@ -28,4 +28,16 @@ public class AutorService {
                 .map(autor -> new AutorDTO(autor.getId(), autor.getNome()))
                 .collect(Collectors.toList());
     }
+
+    public AutorDTO atualizar(Long id, AutorDTO dto) {
+        Autor autor = autorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Autor não encontrado com ID: " + id));
+        autor.setNome(dto.getNome());
+        autor = autorRepository.save(autor);
+        return new AutorDTO(autor.getId(), autor.getNome());
+    }
+
+    public void excluir(Long id) {
+        autorRepository.deleteById(id);
+    }
 }
